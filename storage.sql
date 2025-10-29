@@ -6,72 +6,16 @@
 -- IMPORTANT: Execute schema.sql BEFORE running this file
 -- This file depends on the is_super_admin() function and clinics table from schema.sql
 
--- Note: The actual bucket 'ads-media' must be created manually in Supabase Dashboard
--- This file contains the policies to be applied after bucket creation
+-- NOTE: Storage policies CANNOT be created directly via SQL Editor due to permission restrictions.
+-- You must create these policies through the Supabase Dashboard UI.
+-- This file serves as a reference for what policies to create.
+-- See STORAGE_SETUP.md for detailed dashboard instructions.
 
 -- =============================================
--- STORAGE POLICIES FOR 'ads-media' BUCKET
+-- FILE VALIDATION FUNCTION (Can be executed via SQL)
 -- =============================================
 
--- Policy 1: Public Read Access
--- Allows anyone to view/download ads for TV display
-CREATE POLICY "Public: View ads media"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'ads-media');
-
--- Policy 2: Clinic Owner Upload
--- Allows clinic owners to upload files to their own clinic folder
-CREATE POLICY "Clinic Owner: Upload ads media"
-ON storage.objects FOR INSERT
-WITH CHECK (
-    bucket_id = 'ads-media'
-    AND auth.uid() IS NOT NULL
-    AND (storage.foldername(name))[1] = 'clinic_' || (
-        SELECT id::text FROM clinics WHERE user_id = auth.uid()
-    )
-);
-
--- Policy 3: Clinic Owner Update
--- Allows clinic owners to update files in their own clinic folder
-CREATE POLICY "Clinic Owner: Update ads media"
-ON storage.objects FOR UPDATE
-USING (
-    bucket_id = 'ads-media'
-    AND auth.uid() IS NOT NULL
-    AND (storage.foldername(name))[1] = 'clinic_' || (
-        SELECT id::text FROM clinics WHERE user_id = auth.uid()
-    )
-);
-
--- Policy 4: Clinic Owner Delete
--- Allows clinic owners to delete files from their own clinic folder
-CREATE POLICY "Clinic Owner: Delete ads media"
-ON storage.objects FOR DELETE
-USING (
-    bucket_id = 'ads-media'
-    AND auth.uid() IS NOT NULL
-    AND (storage.foldername(name))[1] = 'clinic_' || (
-        SELECT id::text FROM clinics WHERE user_id = auth.uid()
-    )
-);
-
--- Policy 5: Super Admin Full Access
--- Allows super admins to manage all files
-CREATE POLICY "Super Admin: Full access to ads media"
-ON storage.objects FOR ALL
-USING (
-    bucket_id = 'ads-media'
-    AND is_super_admin()
-)
-WITH CHECK (
-    bucket_id = 'ads-media'
-    AND is_super_admin()
-);
-
--- =============================================
--- HELPER FUNCTION: Validate File Type
--- =============================================
-
+-- Helper function to validate file type and size
 CREATE OR REPLACE FUNCTION validate_ad_file_type()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -99,10 +43,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- =============================================
--- TRIGGER: Validate uploads
--- =============================================
-
+-- Create trigger for file validation
 DROP TRIGGER IF EXISTS trg_validate_ad_file ON storage.objects;
 CREATE TRIGGER trg_validate_ad_file
     BEFORE INSERT ON storage.objects
@@ -110,24 +51,93 @@ CREATE TRIGGER trg_validate_ad_file
     WHEN (NEW.bucket_id = 'ads-media')
     EXECUTE FUNCTION validate_ad_file_type();
 
--- =============================================
--- COMMENTS
--- =============================================
-
-COMMENT ON POLICY "Public: View ads media" ON storage.objects IS
-    'Allows public read access to ads for TV display';
-
-COMMENT ON POLICY "Clinic Owner: Upload ads media" ON storage.objects IS
-    'Allows clinic owners to upload ads to their clinic folder';
-
-COMMENT ON POLICY "Clinic Owner: Update ads media" ON storage.objects IS
-    'Allows clinic owners to update ads in their clinic folder';
-
-COMMENT ON POLICY "Clinic Owner: Delete ads media" ON storage.objects IS
-    'Allows clinic owners to delete ads from their clinic folder';
-
-COMMENT ON POLICY "Super Admin: Full access to ads media" ON storage.objects IS
-    'Allows super admins full access to all ads';
-
 COMMENT ON FUNCTION validate_ad_file_type() IS
     'Validates file type and size for ads-media bucket uploads';
+
+-- =============================================
+-- STORAGE POLICIES REFERENCE
+-- =============================================
+-- These policies MUST be created through the Supabase Dashboard.
+-- Go to: Storage → ads-media bucket → Policies tab → New Policy
+-- =============================================
+
+/*
+===========================================
+POLICY 1: Public Read Access
+===========================================
+Name: Public: View ads media
+Operation: SELECT
+Policy Definition (SQL):
+-------------------------------------------
+bucket_id = 'ads-media'
+-------------------------------------------
+
+
+===========================================
+POLICY 2: Clinic Owner Upload
+===========================================
+Name: Clinic Owner: Upload ads media
+Operation: INSERT
+Policy Definition (SQL):
+-------------------------------------------
+bucket_id = 'ads-media'
+AND auth.uid() IS NOT NULL
+AND (storage.foldername(name))[1] = 'clinic_' || (
+    SELECT id::text FROM clinics WHERE user_id = auth.uid()
+)
+-------------------------------------------
+
+
+===========================================
+POLICY 3: Clinic Owner Update
+===========================================
+Name: Clinic Owner: Update ads media
+Operation: UPDATE
+Policy Definition (SQL):
+-------------------------------------------
+bucket_id = 'ads-media'
+AND auth.uid() IS NOT NULL
+AND (storage.foldername(name))[1] = 'clinic_' || (
+    SELECT id::text FROM clinics WHERE user_id = auth.uid()
+)
+-------------------------------------------
+
+
+===========================================
+POLICY 4: Clinic Owner Delete
+===========================================
+Name: Clinic Owner: Delete ads media
+Operation: DELETE
+Policy Definition (SQL):
+-------------------------------------------
+bucket_id = 'ads-media'
+AND auth.uid() IS NOT NULL
+AND (storage.foldername(name))[1] = 'clinic_' || (
+    SELECT id::text FROM clinics WHERE user_id = auth.uid()
+)
+-------------------------------------------
+
+
+===========================================
+POLICY 5: Super Admin Full Access
+===========================================
+Name: Super Admin: Full access to ads media
+Operation: ALL
+Policy Definition (SQL):
+-------------------------------------------
+bucket_id = 'ads-media'
+AND is_super_admin()
+-------------------------------------------
+
+*/
+
+-- =============================================
+-- INSTRUCTIONS
+-- =============================================
+-- 1. Execute this file in SQL Editor to create the validation function and trigger
+-- 2. Go to Supabase Dashboard → Storage → ads-media → Policies
+-- 3. Create each policy above using the "New Policy" button
+-- 4. Copy the Policy Definition SQL into the policy editor
+-- 5. See STORAGE_SETUP.md for detailed step-by-step instructions with screenshots
+-- =============================================
+
