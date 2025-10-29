@@ -7,18 +7,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =============================================
--- HELPER FUNCTIONS
--- =============================================
-
--- Function to check if current user is a super admin
-CREATE OR REPLACE FUNCTION is_super_admin()
-RETURNS BOOLEAN AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM super_admins WHERE user_id = auth.uid()
-  )
-$$ LANGUAGE SQL SECURITY DEFINER;
-
--- =============================================
 -- TABLES
 -- =============================================
 
@@ -179,6 +167,18 @@ CREATE INDEX idx_ads_clinic_active ON ads(clinic_id, is_active);
 
 -- Indexes for usage_logs table
 CREATE INDEX idx_usage_date ON usage_logs(date);
+
+-- =============================================
+-- HELPER FUNCTIONS
+-- =============================================
+
+-- Function to check if current user is a super admin
+CREATE OR REPLACE FUNCTION is_super_admin()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM super_admins WHERE user_id = auth.uid()
+  )
+$$ LANGUAGE SQL SECURITY DEFINER;
 
 -- =============================================
 -- ROW LEVEL SECURITY (RLS)

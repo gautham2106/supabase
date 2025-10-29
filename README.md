@@ -20,7 +20,7 @@ This repository contains the complete Supabase database schema for the Hospital 
 
 ### 2. Execute the Schema
 
-Execute the SQL files in the following order:
+**IMPORTANT:** Execute the SQL files in this exact order to avoid dependency errors:
 
 #### Step 1: Execute Main Schema
 1. Go to the SQL Editor in your Supabase dashboard
