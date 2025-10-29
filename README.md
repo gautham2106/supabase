@@ -4,11 +4,17 @@ This repository contains the complete Supabase database schema for the Hospital 
 
 ## Files
 
+### Schema & Configuration
 - `schema.sql` - Main database schema with tables, constraints, indexes, and RLS policies
 - `triggers.sql` - Database triggers and helper functions
 - `storage.sql` - Storage bucket policies and file validation
 - `STORAGE_SETUP.md` - Complete storage setup guide with examples
 - `feautures.md` - Complete architecture specification
+
+### Testing
+- `TESTING_GUIDE.md` - Comprehensive testing guide for all backend functionality
+- `quick-test.sql` - Quick verification script (no authentication needed)
+- `test-data.sql` - Sample data for testing (requires test users)
 
 ## Setup Instructions
 
@@ -85,6 +91,55 @@ ORDER BY tablename, indexname;
 -- Check storage bucket exists
 SELECT * FROM storage.buckets WHERE name = 'ads-media';
 ```
+
+---
+
+## Testing the Backend
+
+### Quick Verification (2 minutes)
+
+Execute `quick-test.sql` in SQL Editor to verify everything is set up:
+
+```sql
+-- Runs automated tests for:
+-- ✅ All tables created
+-- ✅ RLS enabled on all tables
+-- ✅ Indexes created
+-- ✅ Helper functions working
+-- ✅ Triggers active
+-- ✅ Constraints enforcing rules
+-- ✅ Storage bucket configured
+```
+
+### Comprehensive Testing (30+ minutes)
+
+See **[TESTING_GUIDE.md](TESTING_GUIDE.md)** for detailed testing including:
+
+- Creating test users and clinics
+- Testing RLS policies (data isolation)
+- Testing all triggers and validations
+- Testing helper functions
+- Complete workflow testing (patient visit, queue management, statistics)
+- Frontend/API testing examples
+
+### Sample Test Data
+
+1. Create 3 test users in Authentication dashboard:
+   - `clinic1@test.com` / `Test123!`
+   - `clinic2@test.com` / `Test123!`
+   - `admin@test.com` / `Admin123!`
+
+2. Edit `test-data.sql` and replace the UUIDs with your test user IDs
+
+3. Execute `test-data.sql` to populate sample data:
+   - 2 clinics
+   - 4 doctors
+   - 5 patients
+   - 7 family members
+   - 7 tokens (various statuses)
+   - 2 ads
+
+---
 
 ## Database Structure
 
