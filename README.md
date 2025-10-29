@@ -6,6 +6,8 @@ This repository contains the complete Supabase database schema for the Hospital 
 
 - `schema.sql` - Main database schema with tables, constraints, indexes, and RLS policies
 - `triggers.sql` - Database triggers and helper functions
+- `storage.sql` - Storage bucket policies and file validation
+- `STORAGE_SETUP.md` - Complete storage setup guide with examples
 - `feautures.md` - Complete architecture specification
 
 ## Setup Instructions
@@ -42,7 +44,22 @@ This will create:
 - Automatic completed_at timestamp trigger
 - Helper functions for token management and statistics
 
-### 3. Verify the Setup
+### 3. Configure Storage
+
+To store advertisement images/videos for TV display:
+
+1. Follow the complete guide in **[STORAGE_SETUP.md](STORAGE_SETUP.md)**
+2. Create the `ads-media` bucket in Supabase Dashboard
+3. Execute `storage.sql` to apply policies
+
+**Quick summary:**
+- Creates public bucket for ad media
+- Enforces clinic-based folder isolation
+- Validates file types (jpg, png, gif, webp, mp4, mov, avi, webm)
+- Limits file size to 10MB
+- Includes upload/delete examples
+
+### 4. Verify the Setup
 
 Run these queries to verify everything is set up correctly:
 
@@ -64,32 +81,9 @@ SELECT indexname, tablename
 FROM pg_indexes
 WHERE schemaname = 'public'
 ORDER BY tablename, indexname;
-```
 
-### 4. Configure Storage (Optional)
-
-If you need to store ad images/videos:
-
-1. Go to Storage in your Supabase dashboard
-2. Create a new bucket named `ads-media`
-3. Set it as **Public**
-4. Configure the following policies:
-
-```sql
--- Allow public read access
-CREATE POLICY "Public Access"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'ads-media');
-
--- Allow authenticated users to upload to their clinic folder
-CREATE POLICY "Clinic Upload"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'ads-media'
-  AND (storage.foldername(name))[1] = 'clinic_' || (
-    SELECT id::text FROM clinics WHERE user_id = auth.uid()
-  )
-);
+-- Check storage bucket exists
+SELECT * FROM storage.buckets WHERE name = 'ads-media';
 ```
 
 ## Database Structure
