@@ -3,6 +3,9 @@
 -- Storage Bucket Configuration
 -- =============================================
 
+-- IMPORTANT: Execute schema.sql BEFORE running this file
+-- This file depends on the is_super_admin() function and clinics table from schema.sql
+
 -- Note: The actual bucket 'ads-media' must be created manually in Supabase Dashboard
 -- This file contains the policies to be applied after bucket creation
 

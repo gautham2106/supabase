@@ -3,6 +3,9 @@
 -- Database Triggers and Functions
 -- =============================================
 
+-- IMPORTANT: Execute schema.sql BEFORE running this file
+-- This file depends on tables created in schema.sql
+
 -- =============================================
 -- TRIGGER FUNCTION: check_token_limit
 -- Validates token limit before insert
