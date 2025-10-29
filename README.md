@@ -11,6 +11,17 @@ This repository contains the complete Supabase database schema for the Hospital 
 - `STORAGE_SETUP.md` - Complete storage setup guide with examples
 - `feautures.md` - Complete architecture specification
 
+### Edge Functions (WhatsApp Integration)
+- `supabase/functions/` - Edge Functions directory
+  - `send-whatsapp-token/` - Token confirmation messages
+  - `send-queue-alerts/` - 5th position queue alerts
+  - `send-review-request/` - Review requests after completion
+  - `log-daily-usage/` - Daily usage logging (cron job)
+  - `_shared/` - Shared utilities (WhatsApp API, types, Supabase client)
+- `EDGE_FUNCTIONS_SETUP.md` - Complete deployment guide for Edge Functions
+- `supabase/config.toml` - Edge Functions configuration
+- `supabase/.env.example` - Environment variables template
+
 ### Testing
 - `TESTING_GUIDE.md` - Comprehensive testing guide for all backend functionality
 - `quick-test.sql` - Quick verification script (no authentication needed)
@@ -65,7 +76,46 @@ To store advertisement images/videos for TV display:
 - Limits file size to 10MB
 - Includes upload/delete examples
 
-### 4. Verify the Setup
+### 4. Deploy Edge Functions (WhatsApp Integration)
+
+For complete WhatsApp functionality:
+
+1. Follow the detailed guide in **[EDGE_FUNCTIONS_SETUP.md](EDGE_FUNCTIONS_SETUP.md)**
+2. Install Supabase CLI
+3. Set up WhatsApp Business API credentials
+4. Deploy 4 Edge Functions:
+   - `send-whatsapp-token` - Token confirmation
+   - `send-queue-alerts` - 5th position alerts
+   - `send-review-request` - Review requests
+   - `log-daily-usage` - Daily usage logging
+
+**Quick deploy:**
+```bash
+cd supabase
+supabase login
+supabase link --project-ref your-project-ref
+
+# Set environment secrets
+supabase secrets set WHATSAPP_API_TOKEN=your-token
+supabase secrets set WHATSAPP_PHONE_NUMBER_ID=your-phone-id
+
+# Deploy functions
+supabase functions deploy send-whatsapp-token
+supabase functions deploy send-queue-alerts
+supabase functions deploy send-review-request
+supabase functions deploy log-daily-usage
+```
+
+**Configure webhooks in Dashboard:**
+- Tokens INSERT → send-whatsapp-token
+- Tokens UPDATE (status → 'in consultation') → send-queue-alerts
+- Tokens UPDATE (status → 'completed') → send-review-request
+
+**Configure cron job:**
+- Schedule: `0 23 * * *` (daily at 23:00)
+- Function: log-daily-usage
+
+### 5. Verify the Setup
 
 Run these queries to verify everything is set up correctly:
 
