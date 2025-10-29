@@ -35,28 +35,123 @@ Click **Create bucket** to finalize.
 
 ---
 
-## Step 2: Apply Storage Policies (SQL Editor)
+## Step 2: Create File Validation (SQL Editor)
 
 ### 2.1 Open SQL Editor
 1. In your Supabase Dashboard, go to **SQL Editor**
 2. Click **New query**
 
-### 2.2 Execute Storage Policies
+### 2.2 Execute Storage Configuration
 Copy the entire contents of `storage.sql` and execute it.
 
 This will create:
-- ✅ Public read access for anyone
-- ✅ Clinic owners can upload to their folder only
-- ✅ Clinic owners can update/delete their own files
-- ✅ Super admins have full access
-- ✅ File type validation (jpg, png, gif, webp, mp4, mov, avi, webm)
+- ✅ File type validation trigger (jpg, png, gif, webp, mp4, mov, avi, webm)
 - ✅ File size validation (max 10MB)
+- ✅ Policy reference documentation
+
+**Note:** The policies themselves will be created in the next step via Dashboard UI.
 
 ---
 
-## Step 3: Verify Setup
+## Step 3: Create Storage Policies (Dashboard UI)
 
-### 3.1 Check Bucket Exists
+**IMPORTANT:** Storage policies cannot be created via SQL due to permission restrictions. You must create them through the Dashboard.
+
+### 3.1 Navigate to Storage Policies
+1. Go to **Storage** in the left sidebar
+2. Click on the **ads-media** bucket
+3. Click on the **Policies** tab
+4. You should see "No policies yet" message
+
+### 3.2 Create Policy 1: Public Read Access
+
+1. Click **New Policy**
+2. Choose **For full customization** (or click "Create a policy from scratch")
+3. Fill in the form:
+   - **Policy name:** `Public: View ads media`
+   - **Allowed operation:** SELECT (check only SELECT)
+   - **Policy definition:** Switch to SQL editor and enter:
+   ```sql
+   bucket_id = 'ads-media'
+   ```
+4. Click **Review** then **Save policy**
+
+### 3.3 Create Policy 2: Clinic Owner Upload
+
+1. Click **New Policy** again
+2. Choose **For full customization**
+3. Fill in the form:
+   - **Policy name:** `Clinic Owner: Upload ads media`
+   - **Allowed operation:** INSERT (check only INSERT)
+   - **Target roles:** `authenticated` (optional)
+   - **WITH CHECK expression:** Switch to SQL editor and enter:
+   ```sql
+   bucket_id = 'ads-media'
+   AND auth.uid() IS NOT NULL
+   AND (storage.foldername(name))[1] = 'clinic_' || (
+       SELECT id::text FROM clinics WHERE user_id = auth.uid()
+   )
+   ```
+4. Click **Review** then **Save policy**
+
+### 3.4 Create Policy 3: Clinic Owner Update
+
+1. Click **New Policy**
+2. Choose **For full customization**
+3. Fill in the form:
+   - **Policy name:** `Clinic Owner: Update ads media`
+   - **Allowed operation:** UPDATE (check only UPDATE)
+   - **USING expression:** Switch to SQL editor and enter:
+   ```sql
+   bucket_id = 'ads-media'
+   AND auth.uid() IS NOT NULL
+   AND (storage.foldername(name))[1] = 'clinic_' || (
+       SELECT id::text FROM clinics WHERE user_id = auth.uid()
+   )
+   ```
+4. Click **Review** then **Save policy**
+
+### 3.5 Create Policy 4: Clinic Owner Delete
+
+1. Click **New Policy**
+2. Choose **For full customization**
+3. Fill in the form:
+   - **Policy name:** `Clinic Owner: Delete ads media`
+   - **Allowed operation:** DELETE (check only DELETE)
+   - **USING expression:** Switch to SQL editor and enter:
+   ```sql
+   bucket_id = 'ads-media'
+   AND auth.uid() IS NOT NULL
+   AND (storage.foldername(name))[1] = 'clinic_' || (
+       SELECT id::text FROM clinics WHERE user_id = auth.uid()
+   )
+   ```
+4. Click **Review** then **Save policy**
+
+### 3.6 Create Policy 5: Super Admin Full Access
+
+1. Click **New Policy**
+2. Choose **For full customization**
+3. Fill in the form:
+   - **Policy name:** `Super Admin: Full access to ads media`
+   - **Allowed operation:** ALL (check all: SELECT, INSERT, UPDATE, DELETE)
+   - **USING expression:** Switch to SQL editor and enter:
+   ```sql
+   bucket_id = 'ads-media'
+   AND is_super_admin()
+   ```
+   - **WITH CHECK expression:** (same as above)
+   ```sql
+   bucket_id = 'ads-media'
+   AND is_super_admin()
+   ```
+4. Click **Review** then **Save policy**
+
+---
+
+## Step 4: Verify Setup
+
+### 4.1 Check Bucket Exists
 Run this query in SQL Editor:
 
 ```sql
@@ -70,25 +165,30 @@ id          | name       | public
 <uuid>      | ads-media  | true
 ```
 
-### 3.2 Check Policies
-Run this query:
+### 4.2 Check Policies (Dashboard)
+1. Go to **Storage** → **ads-media** → **Policies** tab
+2. You should see 5 policies listed:
+   - `Public: View ads media` (SELECT)
+   - `Clinic Owner: Upload ads media` (INSERT)
+   - `Clinic Owner: Update ads media` (UPDATE)
+   - `Clinic Owner: Delete ads media` (DELETE)
+   - `Super Admin: Full access to ads media` (ALL)
+
+### 4.3 Check Policies (SQL - Alternative)
+Run this query in SQL Editor:
 
 ```sql
 SELECT policyname, cmd
 FROM pg_policies
-WHERE tablename = 'objects'
+WHERE schemaname = 'storage'
+  AND tablename = 'objects'
   AND policyname LIKE '%ads%'
 ORDER BY policyname;
 ```
 
 **Expected output:** 5 policies
-- `Clinic Owner: Delete ads media` (DELETE)
-- `Clinic Owner: Update ads media` (UPDATE)
-- `Clinic Owner: Upload ads media` (INSERT)
-- `Public: View ads media` (SELECT)
-- `Super Admin: Full access to ads media` (ALL)
 
-### 3.3 Check Trigger
+### 4.4 Check Trigger
 ```sql
 SELECT tgname, tgtype, tgenabled
 FROM pg_trigger
@@ -104,15 +204,15 @@ trg_validate_ad_file   | 7      | O
 
 ---
 
-## Step 4: Test Upload (Optional)
+## Step 5: Test Upload (Optional)
 
-### 4.1 Using Supabase Dashboard
+### 5.1 Using Supabase Dashboard
 1. Go to **Storage** → **ads-media**
 2. Click **Upload file**
 3. Create a folder structure: `clinic_{your-clinic-id}/`
 4. Upload a test image (JPG/PNG, under 10MB)
 
-### 4.2 Using JavaScript (Frontend)
+### 5.2 Using JavaScript (Frontend)
 ```javascript
 import { createClient } from '@supabase/supabase-js'
 
@@ -145,7 +245,7 @@ async function uploadAd(clinicId, adId, file) {
 }
 ```
 
-### 4.3 Using cURL
+### 5.3 Using cURL
 ```bash
 # Get your access token first (after login)
 ACCESS_TOKEN="your-jwt-token"

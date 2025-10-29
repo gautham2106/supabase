@@ -1,0 +1,96 @@
+# ==============================================
+# Supabase Configuration
+# ==============================================
+
+[api]
+# Port to use for the API URL
+port = 54321
+# Schemas to expose in your API
+schemas = ["public", "storage"]
+# Extra schemas to add to the search_path of every request
+extra_search_path = ["public"]
+# The maximum number of rows returns from a view, table, or stored procedure
+max_rows = 1000
+
+[db]
+# Port to use for the local database URL
+port = 54322
+# The database major version to use
+major_version = 15
+
+[studio]
+# Port to use for Supabase Studio
+port = 54323
+
+[inbucket]
+# Port to use for the email testing server (mailhog)
+port = 54324
+
+[storage]
+# The maximum file size allowed (e.g. "5MB", "500KB")
+file_size_limit = "10MiB"
+
+[auth]
+# The base URL of your website
+site_url = "http://localhost:3000"
+# A list of *exact* URLs that auth providers are permitted to redirect to post authentication
+additional_redirect_urls = ["https://localhost:3000"]
+# How long tokens are valid for, in seconds
+jwt_expiry = 3600
+# Allow/disallow new user signups
+enable_signup = true
+
+[auth.email]
+# Allow/disallow new user signups via email confirmation
+enable_signup = true
+# If enabled, a user will be required to confirm any email change on both the old, and new email addresses
+double_confirm_changes = true
+# If enabled, users need to confirm their email address before signing in
+enable_confirmations = false
+
+# ==============================================
+# Edge Functions Configuration
+# ==============================================
+
+[[edge_runtime.functions]]
+name = "send-whatsapp-token"
+verify_jwt = false
+
+[[edge_runtime.functions]]
+name = "send-queue-alerts"
+verify_jwt = false
+
+[[edge_runtime.functions]]
+name = "send-review-request"
+verify_jwt = false
+
+[[edge_runtime.functions]]
+name = "log-daily-usage"
+verify_jwt = false
+
+# ==============================================
+# Database Webhooks (Triggers)
+# ==============================================
+# These webhooks call the Edge Functions when database events occur
+# Configure these in Supabase Dashboard → Database → Webhooks
+
+# Webhook 1: Token Created
+# Trigger: tokens INSERT
+# Function: send-whatsapp-token
+# HTTP Method: POST
+# HTTP Headers: {"Content-Type": "application/json", "Authorization": "Bearer YOUR_ANON_KEY"}
+
+# Webhook 2: Token Status Updated
+# Trigger: tokens UPDATE
+# Function: send-queue-alerts or send-review-request
+# HTTP Method: POST
+# HTTP Headers: {"Content-Type": "application/json", "Authorization": "Bearer YOUR_ANON_KEY"}
+
+# ==============================================
+# Cron Jobs
+# ==============================================
+# Configure in Supabase Dashboard → Edge Functions → Cron Jobs
+#
+# Job: Daily Usage Logging
+# Schedule: 0 23 * * * (Every day at 23:00 UTC)
+# Function: log-daily-usage

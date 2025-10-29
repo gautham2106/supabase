@@ -4,11 +4,28 @@ This repository contains the complete Supabase database schema for the Hospital 
 
 ## Files
 
+### Schema & Configuration
 - `schema.sql` - Main database schema with tables, constraints, indexes, and RLS policies
 - `triggers.sql` - Database triggers and helper functions
 - `storage.sql` - Storage bucket policies and file validation
 - `STORAGE_SETUP.md` - Complete storage setup guide with examples
 - `feautures.md` - Complete architecture specification
+
+### Edge Functions (WhatsApp Integration)
+- `supabase/functions/` - Edge Functions directory
+  - `send-whatsapp-token/` - Token confirmation messages
+  - `send-queue-alerts/` - 5th position queue alerts
+  - `send-review-request/` - Review requests after completion
+  - `log-daily-usage/` - Daily usage logging (cron job)
+  - `_shared/` - Shared utilities (WhatsApp API, types, Supabase client)
+- `EDGE_FUNCTIONS_SETUP.md` - Complete deployment guide for Edge Functions
+- `supabase/config.toml` - Edge Functions configuration
+- `supabase/.env.example` - Environment variables template
+
+### Testing
+- `TESTING_GUIDE.md` - Comprehensive testing guide for all backend functionality
+- `quick-test.sql` - Quick verification script (no authentication needed)
+- `test-data.sql` - Sample data for testing (requires test users)
 
 ## Setup Instructions
 
@@ -59,7 +76,46 @@ To store advertisement images/videos for TV display:
 - Limits file size to 10MB
 - Includes upload/delete examples
 
-### 4. Verify the Setup
+### 4. Deploy Edge Functions (WhatsApp Integration)
+
+For complete WhatsApp functionality:
+
+1. Follow the detailed guide in **[EDGE_FUNCTIONS_SETUP.md](EDGE_FUNCTIONS_SETUP.md)**
+2. Install Supabase CLI
+3. Set up WhatsApp Business API credentials
+4. Deploy 4 Edge Functions:
+   - `send-whatsapp-token` - Token confirmation
+   - `send-queue-alerts` - 5th position alerts
+   - `send-review-request` - Review requests
+   - `log-daily-usage` - Daily usage logging
+
+**Quick deploy:**
+```bash
+cd supabase
+supabase login
+supabase link --project-ref your-project-ref
+
+# Set environment secrets
+supabase secrets set WHATSAPP_API_TOKEN=your-token
+supabase secrets set WHATSAPP_PHONE_NUMBER_ID=your-phone-id
+
+# Deploy functions
+supabase functions deploy send-whatsapp-token
+supabase functions deploy send-queue-alerts
+supabase functions deploy send-review-request
+supabase functions deploy log-daily-usage
+```
+
+**Configure webhooks in Dashboard:**
+- Tokens INSERT → send-whatsapp-token
+- Tokens UPDATE (status → 'in consultation') → send-queue-alerts
+- Tokens UPDATE (status → 'completed') → send-review-request
+
+**Configure cron job:**
+- Schedule: `0 23 * * *` (daily at 23:00)
+- Function: log-daily-usage
+
+### 5. Verify the Setup
 
 Run these queries to verify everything is set up correctly:
 
@@ -85,6 +141,55 @@ ORDER BY tablename, indexname;
 -- Check storage bucket exists
 SELECT * FROM storage.buckets WHERE name = 'ads-media';
 ```
+
+---
+
+## Testing the Backend
+
+### Quick Verification (2 minutes)
+
+Execute `quick-test.sql` in SQL Editor to verify everything is set up:
+
+```sql
+-- Runs automated tests for:
+-- ✅ All tables created
+-- ✅ RLS enabled on all tables
+-- ✅ Indexes created
+-- ✅ Helper functions working
+-- ✅ Triggers active
+-- ✅ Constraints enforcing rules
+-- ✅ Storage bucket configured
+```
+
+### Comprehensive Testing (30+ minutes)
+
+See **[TESTING_GUIDE.md](TESTING_GUIDE.md)** for detailed testing including:
+
+- Creating test users and clinics
+- Testing RLS policies (data isolation)
+- Testing all triggers and validations
+- Testing helper functions
+- Complete workflow testing (patient visit, queue management, statistics)
+- Frontend/API testing examples
+
+### Sample Test Data
+
+1. Create 3 test users in Authentication dashboard:
+   - `clinic1@test.com` / `Test123!`
+   - `clinic2@test.com` / `Test123!`
+   - `admin@test.com` / `Admin123!`
+
+2. Edit `test-data.sql` and replace the UUIDs with your test user IDs
+
+3. Execute `test-data.sql` to populate sample data:
+   - 2 clinics
+   - 4 doctors
+   - 5 patients
+   - 7 family members
+   - 7 tokens (various statuses)
+   - 2 ads
+
+---
 
 ## Database Structure
 
